@@ -1,0 +1,17 @@
+producer_id,product_name,week_index,quantity
+1,Organic Tomatoes,1,20
+1,Organic Tomatoes,2,22
+1,Organic Tomatoes,3,25
+1,Organic Tomatoes,4,27
+1,Organic Carrots,1,18
+1,Organic Carrots,2,19
+1,Organic Carrots,3,20
+1,Organic Carrots,4,22
+2,Fresh Milk,1,30
+2,Fresh Milk,2,31
+2,Fresh Milk,3,33
+2,Fresh Milk,4,34
+2,Farm Bread,1,14
+2,Farm Bread,2,15
+2,Farm Bread,3,17
+2,Farm Bread,4,18

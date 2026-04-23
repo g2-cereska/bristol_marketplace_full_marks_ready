@@ -1,0 +1,12 @@
+customer_id,product_name,category,interaction_type,score
+1,Organic Tomatoes,Vegetables,purchase,1.0
+1,Organic Carrots,Vegetables,add_to_cart,0.8
+1,Fresh Milk,Dairy,view,0.4
+1,Farm Bread,Bakery,purchase,0.9
+2,Fresh Milk,Dairy,purchase,1.0
+2,Farm Bread,Bakery,add_to_cart,0.8
+2,Organic Tomatoes,Vegetables,view,0.4
+3,Organic Tomatoes,Vegetables,purchase,1.0
+3,Fresh Milk,Dairy,purchase,1.0
+3,Organic Carrots,Vegetables,view,0.6
+3,Farm Bread,Bakery,view,0.5

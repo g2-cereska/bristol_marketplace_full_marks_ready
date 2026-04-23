@@ -1,0 +1,31 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+.env
+.venv/
+venv/
+media/
+staticfiles/
+.pytest_cache/
+.coverage
+htmlcov/
+.DS_Store
+Thumbs.db
+
+# Large datasets
+data/CaseStudyDataset/
+data/fruit_split/
+!data/.gitkeep
+
+# Model artifacts and generated outputs
+ai_service/cv_model/best_model.pth
+ai_service/cv_model/label_map.json
+ai_service/cv_model/cv_metrics.json
+ai_service/cv_model/plots/
+ai_service/models/
+
+# IDE files
+.vscode/
+.idea/
