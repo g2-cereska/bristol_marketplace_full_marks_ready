@@ -9,6 +9,21 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-bristol_user} -d $${POSTGRES_DB:-bristol_marketplace}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ai_service:
+    build:
+      context: .
+      dockerfile: Dockerfile.ai
+    command: uvicorn ai_service.main:app --host 0.0.0.0 --port 8001
+    volumes:
+      - .:/app
+    ports:
+      - "8001:8001"
 
   backend:
     build:
@@ -22,18 +37,10 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
-      - ai_service
-
-  ai_service:
-    build:
-      context: .
-      dockerfile: Dockerfile.ai
-    command: uvicorn ai_service.main:app --host 0.0.0.0 --port 8001
-    volumes:
-      - .:/app
-    ports:
-      - "8001:8001"
+      db:
+        condition: service_healthy
+      ai_service:
+        condition: service_started
 
 volumes:
   postgres_data:
