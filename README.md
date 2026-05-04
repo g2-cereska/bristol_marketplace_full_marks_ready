@@ -223,11 +223,9 @@ bristol_marketplace_full_marks_ready/
 │   │       └── seed_demo_data.py    # Populates demo users and products
 │   └── manage.py
 ├── ai_service/
-│   ├── main.py                      # FastAPI app
-│   ├── recommendations.py           # Collaborative filtering recommender
-│   ├── forecasting.py               # Linear regression demand forecaster
-│   ├── quality_grading.py           # Rule-based and ML quality grader
-│   └── cv_model/                    # Computer vision quality model training
+│   ├── main.py                      # FastAPI app — recommendations, forecasting, quality grading, model registry
+│   ├── evaluate_quality_models.py   # Model comparison and evaluation script
+│   └── cv_model/                    # Computer vision quality model training pipeline
 ├── data/                            # CSV seed data for AI models
 ├── tests/                           # pytest test suite
 ├── docs/                            # Architecture notes and AI evaluation

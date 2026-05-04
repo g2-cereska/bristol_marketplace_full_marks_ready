@@ -40,5 +40,14 @@ class Command(BaseCommand):
         for product_data in products:
             Product.objects.get_or_create(name=product_data['name'], producer=product_data['producer'], defaults=product_data)
 
+        # Admin superuser — accessible at /market/admin-dash/
+        admin_user, _ = User.objects.get_or_create(
+            username='admin_1',
+            defaults={'email': 'admin@bristol-food.example.com', 'is_staff': True, 'is_superuser': True}
+        )
+        admin_user.set_password('Password123!')
+        admin_user.is_staff = True
+        admin_user.is_superuser = True
+        admin_user.save()
+
         self.stdout.write(self.style.SUCCESS('Demo data created/updated successfully.'))
-        
