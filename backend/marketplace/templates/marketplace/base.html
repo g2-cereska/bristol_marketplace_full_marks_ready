@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Bristol Food Network{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green:       #2D6A4F;
+      --green-light: #52B788;
+      --green-pale:  #D8F3DC;
+      --green-dark:  #1B4332;
+      --amber:       #D4A017;
+      --amber-pale:  #FFF3CD;
+      --clay:        #B5541B;
+      --clay-pale:   #FDEBD0;
+      --cream:       #FAF8F2;
+      --ink:         #1A1A1A;
+      --ink-mid:     #4A4A4A;
+      --ink-soft:    #888;
+      --border:      rgba(26,26,26,0.1);
+      --border-med:  rgba(26,26,26,0.18);
+      --white:       #FFFFFF;
+      --radius:      10px;
+      --radius-lg:   16px;
+      --shadow:      0 2px 12px rgba(26,26,26,0.08);
+      --shadow-lg:   0 8px 32px rgba(26,26,26,0.12);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      min-height: 100vh;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    h1,h2,h3,h4 { font-family: 'DM Serif Display', serif; font-weight: 400; line-height: 1.2; }
+
+    /* NAV */
+    nav {
+      background: var(--green-dark);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      height: 60px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.2);
+    }
+    .nav-brand {
+      font-family: 'DM Serif Display', serif;
+      color: var(--green-pale);
+      font-size: 1.15rem;
+      text-decoration: none;
+      flex-shrink: 0;
+      letter-spacing: 0.01em;
+    }
+    .nav-brand span { color: var(--green-light); }
+    .nav-links { display: flex; gap: 0.25rem; align-items: center; flex: 1; }
+    .nav-links a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+    .nav-links a:hover, .nav-links a.active { color: #fff; background: rgba(255,255,255,0.1); }
+    .nav-right { display: flex; align-items: center; gap: 1rem; margin-left: auto; }
+    .nav-user { color: rgba(255,255,255,0.6); font-size: 0.8rem; }
+    .cart-btn {
+      background: var(--green-light);
+      color: var(--green-dark);
+      border: none;
+      padding: 7px 14px;
+      border-radius: 7px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+    .cart-btn:hover { background: #74c99a; }
+    #cart-count {
+      background: var(--green-dark);
+      color: var(--green-pale);
+      border-radius: 10px;
+      padding: 1px 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    /* LAYOUT */
+    .page { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+    .page-header { margin-bottom: 2rem; }
+    .page-title { font-size: 2.4rem; color: var(--green-dark); margin-bottom: 0.4rem; }
+    .page-subtitle { color: var(--ink-mid); font-size: 0.95rem; }
+
+    /* BUTTONS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      border-radius: var(--radius);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-primary { background: var(--green); color: #fff; }
+    .btn-primary:hover { background: var(--green-dark); }
+    .btn-secondary { background: transparent; color: var(--green); border: 1.5px solid var(--green); }
+    .btn-secondary:hover { background: var(--green-pale); }
+    .btn-danger { background: #dc3545; color: #fff; }
+    .btn-danger:hover { background: #b02a37; }
+    .btn-amber { background: var(--amber); color: #fff; }
+    .btn-amber:hover { background: #b8880f; }
+    .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* CARDS */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .card-body { padding: 1.25rem; }
+
+    /* BADGES */
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .badge-green  { background: var(--green-pale); color: var(--green-dark); }
+    .badge-amber  { background: var(--amber-pale); color: #7a5700; }
+    .badge-clay   { background: var(--clay-pale); color: var(--clay); }
+    .badge-gray   { background: #f0f0f0; color: #555; }
+    .badge-red    { background: #fde8e8; color: #c0392b; }
+
+    /* FORMS */
+    .form-group { margin-bottom: 1.1rem; }
+    label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--ink-mid); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.04em; }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border-med);
+      border-radius: var(--radius);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      background: #fff;
+      color: var(--ink);
+      transition: border-color 0.15s;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--green-light); }
+
+    /* ALERTS */
+    .alert {
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .alert-success { background: var(--green-pale); color: var(--green-dark); border: 1px solid var(--green-light); }
+    .alert-error   { background: #fde8e8; color: #c0392b; border: 1px solid #f5b7b1; }
+    .alert-info    { background: var(--amber-pale); color: #7a5700; border: 1px solid var(--amber); }
+
+    /* STATUS PILLS */
+    .status-pending   { background: #fff3cd; color: #856404; }
+    .status-confirmed { background: #cff4fc; color: #055160; }
+    .status-ready     { background: #d1e7dd; color: #0a3622; }
+    .status-delivered { background: var(--green-pale); color: var(--green-dark); }
+    .status-cancelled { background: #fde8e8; color: #842029; }
+
+    /* TOAST */
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--green-dark);
+      color: var(--green-pale);
+      padding: 12px 20px;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      z-index: 9999;
+      max-width: 320px;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.error { background: #c0392b; }
+
+    /* LOADING */
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2.5px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* UTILS */
+    .flex { display: flex; }
+    .flex-col { display: flex; flex-direction: column; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-1 { gap: 0.5rem; }
+    .gap-2 { gap: 1rem; }
+    .gap-3 { gap: 1.5rem; }
+    .mt-1 { margin-top: 0.5rem; }
+    .mt-2 { margin-top: 1rem; }
+    .mt-3 { margin-top: 1.5rem; }
+    .mb-1 { margin-bottom: 0.5rem; }
+    .mb-2 { margin-bottom: 1rem; }
+    .text-muted { color: var(--ink-soft); }
+    .text-sm { font-size: 0.85rem; }
+    .text-right { text-align: right; }
+    .w-full { width: 100%; }
+    .hidden { display: none !important; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; }
+    @media (max-width: 768px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      nav { padding: 0 1rem; gap: 1rem; }
+      .page { padding: 1rem; }
+    }
+
+    /* PAGE TRANSITIONS */
+    .page { animation: fadeUp 0.35s ease; }
+    @keyframes fadeUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: none; } }
+
+    /* SECTION LABEL */
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/market/" class="nav-brand">Bristol <span>Food</span> Network</a>
+    <div class="nav-links">
+      <a href="/market/" id="nav-home">Shop</a>
+      <a href="/market/cart/" id="nav-cart">Cart</a>
+      <a href="/market/orders/" id="nav-orders">My Orders</a>
+      <a href="/market/producer/" id="nav-producer">Producer Hub</a>
+      <a href="/market/admin-dash/" id="nav-admin">Admin</a>
+    </div>
+    <div class="nav-right">
+      <span class="nav-user" id="nav-username"></span>
+      <a href="/market/cart/" class="cart-btn" id="nav-cart-btn">
+        🛒 Cart <span id="cart-count">0</span>
+      </a>
+      <button class="btn btn-secondary btn-sm" id="nav-logout-btn" onclick="logout()" style="color:#fff;border-color:rgba(255,255,255,0.3)">Sign out</button>
+      <a href="/market/login/" class="btn btn-sm" id="nav-login-btn" style="background:var(--green-light);color:var(--green-dark)">Sign in</a>
+    </div>
+  </nav>
+
+  <div id="toast"></div>
+
+  {% block content %}{% endblock %}
+
+  <script>
+    // ─── CSRF helper ───────────────────────────────────────────────────────────
+    function getCsrf() {
+      const m = document.cookie.match(/csrftoken=([^;]+)/);
+      return m ? decodeURIComponent(m[1]) : '';
+    }
+
+    // Fetch CSRF token synchronously before anything else runs
+    async function ensureCsrf() {
+      if (getCsrf()) return;
+      await fetch('/api/csrf/', { credentials: 'same-origin' });
+    }
+
+    async function api(path, opts={}) {
+      // Always re-read the cookie at request time, never at definition time
+      await ensureCsrf();
+      const r = await fetch('/api' + path, {
+        credentials: 'same-origin',
+        ...opts,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrf(),
+          ...(opts.headers || {}),
+        },
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw { status: r.status, data };
+      return data;
+    }
+
+    // ─── Toast ─────────────────────────────────────────────────────────────────
+    function toast(msg, type='ok') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = type === 'error' ? 'error show' : 'show';
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.className = '', 3500);
+    }
+
+    // ─── Auth state ────────────────────────────────────────────────────────────
+    const AUTH = JSON.parse(localStorage.getItem('bfn_auth') || 'null');
+    function saveAuth(data) { localStorage.setItem('bfn_auth', JSON.stringify(data)); }
+    function clearAuth() { localStorage.removeItem('bfn_auth'); }
+
+    async function logout() {
+      try { await api('/auth/logout/', { method: 'POST' }); } catch(e) {}
+      clearAuth();
+      window.location.href = '/market/login/';
+    }
+
+    // ─── Nav setup ─────────────────────────────────────────────────────────────
+    function setupNav() {
+      const loginBtn  = document.getElementById('nav-login-btn');
+      const logoutBtn = document.getElementById('nav-logout-btn');
+      const userSpan  = document.getElementById('nav-username');
+      const adminLink = document.getElementById('nav-admin');
+      const producerLink = document.getElementById('nav-producer');
+
+      if (AUTH) {
+        loginBtn.classList.add('hidden');
+        logoutBtn.classList.remove('hidden');
+        userSpan.textContent = AUTH.user?.username || '';
+        if (AUTH.role !== 'admin') adminLink.classList.add('hidden');
+        if (AUTH.role !== 'producer') producerLink.classList.add('hidden');
+      } else {
+        loginBtn.classList.remove('hidden');
+        logoutBtn.classList.add('hidden');
+        adminLink.classList.add('hidden');
+        producerLink.classList.add('hidden');
+      }
+
+      // highlight active link
+      const path = window.location.pathname;
+      document.querySelectorAll('.nav-links a').forEach(a => {
+        if (a.getAttribute('href') === path) a.classList.add('active');
+      });
+    }
+
+    // ─── Cart count ────────────────────────────────────────────────────────────
+    async function refreshCartCount() {
+      if (!AUTH || AUTH.role !== 'customer') return;
+      try {
+        const cart = await api(`/cart/${AUTH.profile_id}/`);
+        const total = cart.items.reduce((s, i) => s + i.quantity, 0);
+        document.getElementById('cart-count').textContent = total;
+      } catch(e) {}
+    }
+
+    setupNav();
+    refreshCartCount();
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,337 @@
+{% extends "marketplace/base.html" %}
+{% block title %}Shop — Bristol Food Network{% endblock %}
+{% block content %}
+<style>
+  .shop-layout { display: grid; grid-template-columns: 240px 1fr; gap: 2rem; max-width: 1200px; margin: 0 auto; padding: 2rem; }
+  @media (max-width: 900px) { .shop-layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
+
+  /* SIDEBAR */
+  .sidebar { position: sticky; top: 80px; height: fit-content; }
+  .sidebar-section { margin-bottom: 1.75rem; }
+  .sidebar h3 { font-family: 'DM Serif Display', serif; font-size: 1.1rem; color: var(--green-dark); margin-bottom: 0.75rem; }
+  .category-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 10px; border-radius: 8px; cursor: pointer;
+    font-size: 0.875rem; color: var(--ink-mid);
+    transition: all 0.12s;
+  }
+  .category-item:hover { background: var(--green-pale); color: var(--green-dark); }
+  .category-item.active { background: var(--green-pale); color: var(--green); font-weight: 600; }
+  .cat-count { background: var(--border); border-radius: 10px; padding: 1px 7px; font-size: 0.72rem; color: var(--ink-soft); }
+  .filter-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; color: var(--ink-mid); cursor: pointer; margin-bottom: 8px; }
+  .filter-toggle input { width: auto; }
+  .surplus-banner {
+    background: linear-gradient(135deg, var(--amber-pale), #fff8e8);
+    border: 1.5px solid var(--amber);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-size: 0.82rem;
+    color: #7a5700;
+    line-height: 1.5;
+  }
+
+  /* SEARCH BAR */
+  .shop-search {
+    display: flex; gap: 10px; margin-bottom: 1.5rem; align-items: center;
+  }
+  .search-input-wrap { position: relative; flex: 1; }
+  .search-input-wrap input { padding-left: 38px; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1rem; opacity: 0.5; }
+  .sort-select { width: auto; padding: 10px 32px 10px 12px; min-width: 160px; }
+
+  /* PRODUCT GRID */
+  .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.25rem; }
+
+  .product-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column;
+    transition: transform 0.18s, box-shadow 0.18s;
+    cursor: pointer;
+  }
+  .product-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+
+  .product-img {
+    height: 140px;
+    background: var(--green-pale);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3rem;
+    position: relative;
+  }
+  .product-badges { position: absolute; top: 10px; left: 10px; display: flex; gap: 5px; flex-wrap: wrap; }
+  .product-discount { position: absolute; top: 10px; right: 10px; background: var(--clay); color: #fff; font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
+
+  .product-body { padding: 1rem; flex: 1; display: flex; flex-direction: column; }
+  .product-name { font-weight: 600; font-size: 0.95rem; color: var(--ink); margin-bottom: 3px; }
+  .product-producer { font-size: 0.78rem; color: var(--ink-soft); margin-bottom: 8px; }
+  .product-meta { font-size: 0.78rem; color: var(--ink-mid); margin-bottom: 6px; display: flex; flex-direction: column; gap: 2px; }
+  .product-meta span { display: flex; align-items: center; gap: 5px; }
+  .product-footer { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .product-price { font-size: 1.1rem; font-weight: 700; color: var(--green-dark); }
+  .product-price-orig { font-size: 0.78rem; text-decoration: line-through; color: var(--ink-soft); }
+  .product-unit { font-size: 0.75rem; color: var(--ink-soft); }
+  .add-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--green); color: #fff;
+    border: none; font-size: 1.2rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.12s, transform 0.12s;
+    flex-shrink: 0;
+  }
+  .add-btn:hover { background: var(--green-dark); transform: scale(1.1); }
+  .add-btn:active { transform: scale(0.95); }
+
+  .empty-state { text-align: center; padding: 4rem 2rem; color: var(--ink-soft); grid-column: 1/-1; }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+
+  /* QTY MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    animation: fadeIn 0.2s;
+  }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  .modal {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    width: 380px;
+    max-width: 95vw;
+    box-shadow: var(--shadow-lg);
+    animation: slideUp 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes slideUp { from { transform: translateY(30px) scale(0.96); opacity:0; } to { transform: none; opacity:1; } }
+  .modal-title { font-size: 1.3rem; color: var(--green-dark); margin-bottom: 0.5rem; }
+  .qty-control { display: flex; align-items: center; gap: 1rem; justify-content: center; margin: 1.25rem 0; }
+  .qty-btn { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--border-med); background: none; font-size: 1.2rem; cursor: pointer; transition: all 0.12s; }
+  .qty-btn:hover { background: var(--green-pale); border-color: var(--green); }
+  .qty-val { font-size: 1.5rem; font-weight: 700; min-width: 40px; text-align: center; color: var(--green-dark); }
+  .modal-footer { display: flex; gap: 10px; }
+
+  /* RESULTS BAR */
+  .results-bar { font-size: 0.82rem; color: var(--ink-soft); margin-bottom: 1rem; }
+</style>
+
+<div class="shop-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <h3>Categories</h3>
+      <div id="category-list">
+        <div class="category-item active" data-slug="" onclick="filterCategory(this,'')">🌿 All products</div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h3>Filters</h3>
+      <label class="filter-toggle"><input type="checkbox" id="filter-organic" onchange="applyFilters()"> Organic only</label>
+      <label class="filter-toggle"><input type="checkbox" id="filter-surplus" onchange="applyFilters()"> Surplus / discounted</label>
+    </div>
+    <div class="surplus-banner">
+      🌾 <strong>Reduce food waste</strong><br>
+      Surplus produce is discounted by producers to sell quickly. Look for the orange discount badge.
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main>
+    <div class="page-header">
+      <h1 class="page-title">Fresh from Bristol</h1>
+      <p class="page-subtitle">Seasonal produce direct from local farms within 20 miles of Bristol</p>
+    </div>
+
+    <div class="shop-search">
+      <div class="search-input-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Search products, farms…" oninput="applyFilters()">
+      </div>
+      <select class="sort-select" id="sort-select" onchange="renderProducts()">
+        <option value="default">Sort: Featured</option>
+        <option value="price-asc">Price: low to high</option>
+        <option value="price-desc">Price: high to low</option>
+        <option value="name">Name A–Z</option>
+      </select>
+    </div>
+
+    <div class="results-bar" id="results-bar">Loading…</div>
+    <div class="products-grid" id="products-grid">
+      <div class="empty-state"><div class="icon">🌱</div><p>Loading products…</p></div>
+    </div>
+  </main>
+</div>
+
+<!-- QTY MODAL -->
+<div class="modal-overlay hidden" id="qty-modal" onclick="closeModal(event)">
+  <div class="modal">
+    <h3 class="modal-title" id="modal-product-name">Add to cart</h3>
+    <p class="text-sm text-muted" id="modal-product-info"></p>
+    <div class="qty-control">
+      <button class="qty-btn" onclick="changeQty(-1)">−</button>
+      <span class="qty-val" id="qty-val">1</span>
+      <button class="qty-btn" onclick="changeQty(1)">+</button>
+    </div>
+    <p class="text-sm text-muted" style="text-align:center;margin-bottom:1rem;" id="modal-line-total"></p>
+    <div class="modal-footer">
+      <button class="btn btn-secondary w-full" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary w-full" onclick="confirmAddToCart()">Add to cart</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let allProducts = [];
+  let filtered = [];
+  let categories = [];
+  let activeCategory = '';
+  let modalProduct = null;
+  let modalQty = 1;
+
+  const EMOJI = { 'Vegetables':'🥕','Dairy Products':'🥛','Bakery Goods':'🍞','Preserves':'🍯','Seasonal':'🌿','default':'🌾' };
+  function getEmoji(cat) { return EMOJI[cat] || EMOJI.default; }
+
+  async function loadProducts() {
+    try {
+      allProducts = await api('/products/');
+      buildCategories();
+      applyFilters();
+    } catch(e) { document.getElementById('products-grid').innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Could not load products.</p></div>'; }
+  }
+
+  function buildCategories() {
+    categories = [...new Set(allProducts.map(p => p.category_name))].sort();
+    const list = document.getElementById('category-list');
+    list.innerHTML = `<div class="category-item active" data-slug="" onclick="filterCategory(this,'')">🌿 All products</div>`;
+    categories.forEach(cat => {
+      const count = allProducts.filter(p => p.category_name === cat).length;
+      const div = document.createElement('div');
+      div.className = 'category-item';
+      div.dataset.slug = cat;
+      div.onclick = function() { filterCategory(this, cat); };
+      div.innerHTML = `${getEmoji(cat)} ${cat} <span class="cat-count">${count}</span>`;
+      list.appendChild(div);
+    });
+  }
+
+  function filterCategory(el, cat) {
+    document.querySelectorAll('.category-item').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    activeCategory = cat;
+    applyFilters();
+  }
+
+  function applyFilters() {
+    const search = document.getElementById('search-input').value.toLowerCase();
+    const organicOnly = document.getElementById('filter-organic').checked;
+    const surplusOnly = document.getElementById('filter-surplus').checked;
+    filtered = allProducts.filter(p => {
+      if (activeCategory && p.category_name !== activeCategory) return false;
+      if (!p.is_visible) return false;
+      if (organicOnly && !p.organic_certified) return false;
+      if (surplusOnly && (!p.discount_percent || p.discount_percent <= 0)) return false;
+      if (search && !p.name.toLowerCase().includes(search) && !p.producer_name.toLowerCase().includes(search) && !(p.description||'').toLowerCase().includes(search)) return false;
+      return true;
+    });
+    renderProducts();
+  }
+
+  function renderProducts() {
+    const sort = document.getElementById('sort-select').value;
+    const sorted = [...filtered];
+    if (sort === 'price-asc') sorted.sort((a,b) => a.current_price - b.current_price);
+    else if (sort === 'price-desc') sorted.sort((a,b) => b.current_price - a.current_price);
+    else if (sort === 'name') sorted.sort((a,b) => a.name.localeCompare(b.name));
+
+    document.getElementById('results-bar').textContent = `${sorted.length} product${sorted.length !== 1 ? 's' : ''} found`;
+
+    if (!sorted.length) {
+      document.getElementById('products-grid').innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>No products match your filters.</p></div>';
+      return;
+    }
+
+    document.getElementById('products-grid').innerHTML = sorted.map(p => {
+      const hasDiscount = p.discount_percent > 0;
+      const avail = p.availability === 'in_season' ? `<span class="badge badge-green">In season</span>` : '';
+      const organic = p.organic_certified ? `<span class="badge badge-green">Organic</span>` : '';
+      const surplus = hasDiscount ? `<span class="badge badge-amber">Surplus</span>` : '';
+      const discBadge = hasDiscount ? `<div class="product-discount">-${p.discount_percent}%</div>` : '';
+      const origPrice = hasDiscount ? `<span class="product-price-orig">£${parseFloat(p.price).toFixed(2)}</span>` : '';
+
+      const harvest = p.harvest_date ? `<span>🌱 Harvested ${p.harvest_date}</span>` : '';
+      const origin  = p.farm_origin  ? `<span>📍 ${p.farm_origin}</span>` : '';
+      const bb      = p.best_before  ? `<span>📅 Best before ${p.best_before}</span>` : '';
+
+      return `<div class="product-card" onclick="openModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+        <div class="product-img">
+          ${getEmoji(p.category_name)}
+          <div class="product-badges">${avail}${organic}${surplus}</div>
+          ${discBadge}
+        </div>
+        <div class="product-body">
+          <div class="product-name">${p.name}</div>
+          <div class="product-producer">🏪 ${p.producer_name}</div>
+          <div class="product-meta">${harvest}${origin}${bb}</div>
+          <div class="product-footer">
+            <div>
+              <div class="product-price">£${parseFloat(p.current_price).toFixed(2)} ${origPrice}</div>
+              <div class="product-unit">per ${p.unit}</div>
+            </div>
+            <button class="add-btn" onclick="event.stopPropagation();openModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">+</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function openModal(product) {
+    if (!AUTH || AUTH.role !== 'customer') {
+      toast('Please sign in as a customer to add items.', 'error');
+      return;
+    }
+    modalProduct = product;
+    modalQty = 1;
+    document.getElementById('modal-product-name').textContent = product.name;
+    document.getElementById('modal-product-info').innerHTML =
+      `${product.producer_name} · £${parseFloat(product.current_price).toFixed(2)} per ${product.unit}` +
+      (product.allergen_info ? `<br><strong>Allergens:</strong> ${product.allergen_info}` : '');
+    updateModalTotal();
+    document.getElementById('qty-modal').classList.remove('hidden');
+  }
+
+  function updateModalTotal() {
+    document.getElementById('qty-val').textContent = modalQty;
+    const t = (parseFloat(modalProduct.current_price) * modalQty).toFixed(2);
+    document.getElementById('modal-line-total').textContent = `Total: £${t}`;
+  }
+
+  function changeQty(delta) {
+    modalQty = Math.max(1, Math.min(modalProduct.stock_quantity, modalQty + delta));
+    updateModalTotal();
+  }
+
+  function closeModal(e) {
+    if (!e || e.target === document.getElementById('qty-modal')) {
+      document.getElementById('qty-modal').classList.add('hidden');
+    }
+  }
+
+  async function confirmAddToCart() {
+    try {
+      await api('/cart/add/', { method: 'POST', body: JSON.stringify({ customer_id: AUTH.profile_id, product_id: modalProduct.id, quantity: modalQty }) });
+      closeModal();
+      toast(`Added ${modalQty}× ${modalProduct.name} to cart 🛒`);
+      refreshCartCount();
+    } catch(e) {
+      toast(e.data?.non_field_errors?.[0] || 'Could not add to cart.', 'error');
+    }
+  }
+
+  loadProducts();
+</script>
+{% endblock %}

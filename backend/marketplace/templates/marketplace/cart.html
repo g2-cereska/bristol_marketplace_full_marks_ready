@@ -1,0 +1,296 @@
+{% extends "marketplace/base.html" %}
+{% block title %}Cart & Checkout — Bristol Food Network{% endblock %}
+{% block content %}
+<style>
+  .checkout-layout { display: grid; grid-template-columns: 1fr 360px; gap: 2rem; max-width: 1100px; margin: 0 auto; padding: 2rem; }
+  @media (max-width: 900px) { .checkout-layout { grid-template-columns: 1fr; } }
+
+  /* CART ITEMS */
+  .producer-group { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 1.25rem; overflow: hidden; box-shadow: var(--shadow); }
+  .producer-header {
+    padding: 1rem 1.25rem;
+    background: var(--green-dark);
+    color: var(--green-pale);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .producer-header h3 { font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 600; }
+  .producer-subtotal { font-size: 0.85rem; opacity: 0.8; }
+
+  .cart-item { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); }
+  .cart-item:last-child { border-bottom: none; }
+  .item-emoji { font-size: 2rem; width: 52px; height: 52px; background: var(--green-pale); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .item-info { flex: 1; min-width: 0; }
+  .item-name { font-weight: 600; font-size: 0.9rem; }
+  .item-detail { font-size: 0.78rem; color: var(--ink-soft); }
+  .qty-inline { display: flex; align-items: center; gap: 8px; }
+  .qty-inline-btn { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--border-med); background: none; font-size: 1rem; cursor: pointer; transition: all 0.12s; }
+  .qty-inline-btn:hover { background: var(--green-pale); border-color: var(--green); }
+  .qty-inline-num { font-weight: 700; min-width: 24px; text-align: center; }
+  .item-total { font-weight: 700; color: var(--green-dark); font-size: 0.95rem; text-align: right; min-width: 60px; }
+  .remove-btn { background: none; border: none; color: var(--ink-soft); font-size: 1.1rem; cursor: pointer; padding: 4px; border-radius: 6px; transition: all 0.12s; }
+  .remove-btn:hover { color: var(--clay); background: var(--clay-pale); }
+
+  /* DELIVERY DATE PER PRODUCER */
+  .delivery-input { margin: 0.5rem 1.25rem 1rem; display: flex; align-items: center; gap: 10px; }
+  .delivery-input label { font-size: 0.78rem; font-weight: 600; color: var(--ink-mid); white-space: nowrap; text-transform: none; letter-spacing: 0; }
+  .delivery-input input { flex: 1; }
+
+  /* EMPTY */
+  .empty-cart { text-align: center; padding: 4rem 2rem; }
+  .empty-cart .icon { font-size: 4rem; margin-bottom: 1rem; }
+  .empty-cart h2 { font-size: 1.6rem; color: var(--green-dark); margin-bottom: 0.5rem; }
+
+  /* ORDER SUMMARY */
+  .summary-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow); position: sticky; top: 80px; }
+  .summary-header { background: var(--green); color: #fff; padding: 1.25rem; }
+  .summary-header h2 { font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 700; }
+  .summary-body { padding: 1.25rem; }
+  .summary-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.875rem; margin-bottom: 8px; }
+  .summary-row.total { font-size: 1.1rem; font-weight: 700; color: var(--green-dark); border-top: 1.5px solid var(--border); padding-top: 10px; margin-top: 10px; }
+  .summary-divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+
+  .payment-section { margin-top: 1rem; }
+  .payment-method { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1.5px solid var(--border-med); border-radius: var(--radius); font-size: 0.875rem; margin-bottom: 8px; cursor: pointer; transition: all 0.12s; }
+  .payment-method.selected { border-color: var(--green); background: var(--green-pale); }
+  .payment-method input { width: auto; }
+
+  .simulate-fail { margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--ink-soft); }
+  .simulate-fail input { width: auto; }
+
+  /* CONFIRM SCREEN */
+  .confirm-screen { text-align: center; padding: 3rem 1rem; max-width: 500px; margin: 0 auto; }
+  .confirm-icon { font-size: 4rem; margin-bottom: 1rem; animation: pop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+  .confirm-title { font-size: 2rem; color: var(--green-dark); margin-bottom: 0.5rem; }
+  .confirm-ref { font-family: monospace; background: var(--green-pale); padding: 4px 12px; border-radius: 6px; color: var(--green-dark); font-weight: 700; display: inline-block; margin: 0.5rem 0 1rem; }
+</style>
+
+<div id="main-content">
+  <div class="checkout-layout" id="checkout-view">
+    <!-- CART COLUMN -->
+    <div>
+      <div class="page-header">
+        <h1 class="page-title">Your cart</h1>
+        <p class="page-subtitle">Review your items and select delivery dates per producer</p>
+      </div>
+      <div id="cart-content">
+        <div class="empty-cart"><div class="icon">🛒</div><p>Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- SUMMARY COLUMN -->
+    <div>
+      <div class="summary-card">
+        <div class="summary-header"><h2>Order summary</h2></div>
+        <div class="summary-body">
+          <div id="summary-lines"></div>
+          <div class="summary-row total">
+            <span>Total</span>
+            <span id="summary-total">£0.00</span>
+          </div>
+          <div class="summary-row" style="font-size:0.78rem;color:var(--ink-soft);">
+            <span>Network commission (5%)</span>
+            <span id="summary-commission">£0.00</span>
+          </div>
+          <div class="summary-row" style="font-size:0.78rem;color:var(--ink-soft);">
+            <span>Producers receive (95%)</span>
+            <span id="summary-payout">£0.00</span>
+          </div>
+
+          <hr class="summary-divider">
+
+          <div class="form-group">
+            <label>Delivery address</label>
+            <input type="text" id="delivery-address" placeholder="Auto-filled from your profile">
+          </div>
+
+          <div class="payment-section">
+            <div class="section-label">Payment</div>
+            <div class="payment-method selected" onclick="selectPayment(this,'sandbox')">
+              <input type="radio" name="pay" checked> 🧪 Sandbox (test mode)
+            </div>
+            <label class="simulate-fail">
+              <input type="checkbox" id="sim-fail"> Simulate payment failure (for demo)
+            </label>
+          </div>
+
+          <button class="btn btn-primary w-full mt-2" id="place-btn" onclick="placeOrder()" style="height:46px;font-size:0.95rem;">
+            Place order
+          </button>
+          <p class="text-sm text-muted mt-1" style="text-align:center;">Your cart will be cleared on success</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRMATION -->
+  <div class="confirm-screen hidden" id="confirm-view">
+    <div class="confirm-icon">✅</div>
+    <h2 class="confirm-title">Order placed!</h2>
+    <p class="text-muted">Reference</p>
+    <div class="confirm-ref" id="confirm-ref">—</div>
+    <p class="text-muted text-sm mb-2" id="confirm-detail"></p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <a href="/market/orders/" class="btn btn-primary">View my orders</a>
+      <a href="/market/" class="btn btn-secondary">Continue shopping</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let cartData = null;
+  let selectedPayment = 'sandbox';
+
+  function selectPayment(el, method) {
+    document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedPayment = method;
+  }
+
+  async function loadCart() {
+    if (!AUTH || AUTH.role !== 'customer') {
+      document.getElementById('cart-content').innerHTML = `
+        <div class="empty-cart">
+          <div class="icon">🔒</div>
+          <h2>Sign in to view your cart</h2>
+          <a href="/market/login/" class="btn btn-primary mt-2">Sign in</a>
+        </div>`;
+      return;
+    }
+    try {
+      cartData = await api(`/cart/${AUTH.profile_id}/`);
+      renderCart();
+    } catch(e) {
+      document.getElementById('cart-content').innerHTML = '<div class="empty-cart"><div class="icon">⚠️</div><p>Could not load cart.</p></div>';
+    }
+  }
+
+  const EMOJI = { 'Vegetables':'🥕','Dairy Products':'🥛','Bakery Goods':'🍞','Preserves':'🍯','default':'🌾' };
+  function getEmoji(cat) { return EMOJI[cat]||EMOJI.default; }
+
+  function renderCart() {
+    if (!cartData || !cartData.items.length) {
+      document.getElementById('cart-content').innerHTML = `
+        <div class="empty-cart">
+          <div class="icon">🛒</div>
+          <h2>Your cart is empty</h2>
+          <p class="text-muted mb-2">Browse local products and add them here</p>
+          <a href="/market/" class="btn btn-primary">Shop now</a>
+        </div>`;
+      updateSummary(0);
+      return;
+    }
+
+    // group by producer
+    const groups = cartData.grouped_by_producer;
+    const minDate = new Date(); minDate.setDate(minDate.getDate() + 3);
+    const minDateStr = minDate.toISOString().split('T')[0];
+
+    document.getElementById('cart-content').innerHTML = groups.map(g => `
+      <div class="producer-group">
+        <div class="producer-header">
+          <h3>🏪 ${g.producer_name}</h3>
+          <span class="producer-subtotal">Subtotal: £${parseFloat(g.subtotal).toFixed(2)}</span>
+        </div>
+        ${g.items.map(item => `
+          <div class="cart-item" id="cart-item-${item.id}">
+            <div class="item-emoji">${getEmoji(item.product.category_name)}</div>
+            <div class="item-info">
+              <div class="item-name">${item.product.name}</div>
+              <div class="item-detail">£${parseFloat(item.product.current_price).toFixed(2)} per ${item.product.unit} · Stock: ${item.product.stock_quantity}</div>
+            </div>
+            <div class="qty-inline">
+              <button class="qty-inline-btn" onclick="updateQty(${item.id}, ${item.quantity - 1}, ${item.product.stock_quantity})">−</button>
+              <span class="qty-inline-num">${item.quantity}</span>
+              <button class="qty-inline-btn" onclick="updateQty(${item.id}, ${item.quantity + 1}, ${item.product.stock_quantity})">+</button>
+            </div>
+            <div class="item-total">£${parseFloat(item.line_total).toFixed(2)}</div>
+            <button class="remove-btn" onclick="removeItem(${item.id})" title="Remove">✕</button>
+          </div>`).join('')}
+        <div class="delivery-input">
+          <label>📅 Delivery date for ${g.producer_name}:</label>
+          <input type="date" id="date-${g.producer_id}" min="${minDateStr}" value="${minDateStr}">
+        </div>
+      </div>`).join('');
+
+    // fill delivery address
+    updateSummary(cartData.total);
+  }
+
+  function updateSummary(total) {
+    const t = parseFloat(total) || 0;
+    const comm = (t * 0.05).toFixed(2);
+    const payout = (t * 0.95).toFixed(2);
+    document.getElementById('summary-total').textContent = `£${t.toFixed(2)}`;
+    document.getElementById('summary-commission').textContent = `£${comm}`;
+    document.getElementById('summary-payout').textContent = `£${payout}`;
+
+    const groups = cartData?.grouped_by_producer || [];
+    document.getElementById('summary-lines').innerHTML = groups.map(g =>
+      `<div class="summary-row"><span>${g.producer_name}</span><span>£${parseFloat(g.subtotal).toFixed(2)}</span></div>`
+    ).join('');
+  }
+
+  async function updateQty(itemId, newQty, maxQty) {
+    if (newQty < 1) { removeItem(itemId); return; }
+    if (newQty > maxQty) { toast('Not enough stock.', 'error'); return; }
+    try {
+      await api(`/cart/items/${itemId}/`, { method: 'PATCH', body: JSON.stringify({ quantity: newQty }) });
+      cartData = await api(`/cart/${AUTH.profile_id}/`);
+      renderCart();
+      refreshCartCount();
+    } catch(e) { toast('Could not update quantity.', 'error'); }
+  }
+
+  async function removeItem(itemId) {
+    try {
+      await api(`/cart/items/${itemId}/`, { method: 'DELETE' });
+      cartData = await api(`/cart/${AUTH.profile_id}/`);
+      renderCart();
+      refreshCartCount();
+      toast('Item removed.');
+    } catch(e) { toast('Could not remove item.', 'error'); }
+  }
+
+  async function placeOrder() {
+    if (!cartData?.items?.length) { toast('Your cart is empty.', 'error'); return; }
+    const btn = document.getElementById('place-btn');
+    btn.innerHTML = '<span class="spinner"></span> Placing order…';
+    btn.disabled = true;
+
+    const producerDeliveryDates = {};
+    (cartData.grouped_by_producer || []).forEach(g => {
+      const el = document.getElementById(`date-${g.producer_id}`);
+      if (el) producerDeliveryDates[g.producer_id] = el.value;
+    });
+
+    const payload = {
+      customer_id: AUTH.profile_id,
+      delivery_address: document.getElementById('delivery-address').value || undefined,
+      producer_delivery_dates: producerDeliveryDates,
+      payment_method: selectedPayment,
+      simulate_payment_failure: document.getElementById('sim-fail').checked,
+    };
+
+    try {
+      const order = await api('/orders/create/', { method: 'POST', body: JSON.stringify(payload) });
+      document.getElementById('confirm-ref').textContent = order.transaction_reference || `#${order.id}`;
+      document.getElementById('confirm-detail').textContent =
+        `£${parseFloat(order.total_amount).toFixed(2)} · ${order.suborders.length} producer${order.suborders.length!==1?'s':''} · Food miles: ${parseFloat(order.food_miles_total).toFixed(1)} mi`;
+      document.getElementById('checkout-view').classList.add('hidden');
+      document.getElementById('confirm-view').classList.remove('hidden');
+      refreshCartCount();
+    } catch(e) {
+      const msg = e.data?.non_field_errors?.[0] || e.data?.detail || 'Order failed. Please try again.';
+      toast(msg, 'error');
+      btn.innerHTML = 'Place order';
+      btn.disabled = false;
+    }
+  }
+
+  loadCart();
+</script>
+{% endblock %}

@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
     AdminDashboardView, AIForecastView, AIRecommendView, CartItemDetailView, CartView,
-    CategoryListView, CustomerRegisterView, HealthView, LoginView, LogoutView,
+    CategoryListView, CsrfTokenView, CustomerRegisterView, HealthView, LoginView, LogoutView,
     OrderCreateView, OrderListView, ProducerOrderView, ProducerRegisterView,
     ProductDetailView, ProductListCreateView, SettlementSummaryView,
     UpdateProducerSubOrderStatusView,
@@ -9,6 +9,7 @@ from .views import (
 
 urlpatterns = [
     path('health/', HealthView.as_view()),
+    path('csrf/', CsrfTokenView.as_view()),
     path('auth/login/', LoginView.as_view()),
     path('auth/logout/', LogoutView.as_view()),
     path('producers/register/', ProducerRegisterView.as_view()),

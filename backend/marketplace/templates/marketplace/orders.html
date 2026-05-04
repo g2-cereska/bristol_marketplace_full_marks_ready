@@ -1,0 +1,78 @@
+{% extends "marketplace/base.html" %}
+{% block title %}My Orders — Bristol Food Network{% endblock %}
+{% block content %}
+<style>
+  .order-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 1.25rem; overflow: hidden; box-shadow: var(--shadow); }
+  .order-header { padding: 1rem 1.25rem; background: var(--cream); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .order-ref { font-family: monospace; font-size: 0.85rem; background: var(--green-pale); color: var(--green-dark); padding: 2px 10px; border-radius: 6px; font-weight: 700; }
+  .order-meta { font-size: 0.8rem; color: var(--ink-soft); }
+  .suborder-row { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); }
+  .suborder-row:last-child { border-bottom: none; }
+  .suborder-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .suborder-producer { font-weight: 600; font-size: 0.875rem; color: var(--green-dark); }
+  .item-mini { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--ink-mid); padding: 2px 0; }
+  .order-totals { padding: 0.75rem 1.25rem; background: #f9faf8; display: flex; gap: 1.5rem; flex-wrap: wrap; }
+  .order-total-item { font-size: 0.8rem; }
+  .order-total-label { color: var(--ink-soft); }
+  .order-total-val { font-weight: 700; color: var(--ink); }
+  .status-badge { font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.04em; }
+</style>
+
+<div class="page" style="max-width:860px;">
+  <div class="page-header">
+    <h1 class="page-title">My orders</h1>
+    <p class="page-subtitle">Track all your orders and delivery status</p>
+  </div>
+  <div id="orders-list"><p class="text-muted">Loading…</p></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const STATUS_CLASS = { pending:'status-pending', confirmed:'status-confirmed', ready:'status-ready', delivered:'status-delivered', cancelled:'status-cancelled' };
+
+  async function loadOrders() {
+    if (!AUTH) { document.getElementById('orders-list').innerHTML = '<p>Please <a href="/market/login/">sign in</a> to view orders.</p>'; return; }
+    try {
+      const orders = await api('/orders/');
+      if (!orders.length) {
+        document.getElementById('orders-list').innerHTML = `<div style="text-align:center;padding:3rem;color:var(--ink-soft)"><div style="font-size:3rem">📦</div><p>No orders yet. <a href="/market/" style="color:var(--green)">Start shopping</a></p></div>`;
+        return;
+      }
+      document.getElementById('orders-list').innerHTML = orders.map(o => {
+        const statusClass = STATUS_CLASS[o.status] || 'status-pending';
+        return `<div class="order-card">
+          <div class="order-header">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <span class="order-ref">${o.transaction_reference || '#'+o.id}</span>
+              <span class="status-badge badge ${statusClass}">${o.status}</span>
+            </div>
+            <span class="order-meta">📅 ${o.delivery_date} · £${parseFloat(o.total_amount).toFixed(2)}</span>
+          </div>
+          ${o.suborders.map(sub => `
+            <div class="suborder-row">
+              <div class="suborder-header">
+                <span class="suborder-producer">🏪 ${sub.producer_name}</span>
+                <span class="status-badge badge ${STATUS_CLASS[sub.status]||'status-pending'}">${sub.status}</span>
+              </div>
+              ${sub.items.map(i => `
+                <div class="item-mini">
+                  <span>${i.product_name} × ${i.quantity}</span>
+                  <span>£${parseFloat(i.item_total).toFixed(2)}</span>
+                </div>`).join('')}
+              ${sub.delivery_notes ? `<div class="text-sm text-muted mt-1">📝 ${sub.delivery_notes}</div>` : ''}
+            </div>`).join('')}
+          <div class="order-totals">
+            <div class="order-total-item"><div class="order-total-label">Total</div><div class="order-total-val">£${parseFloat(o.total_amount).toFixed(2)}</div></div>
+            <div class="order-total-item"><div class="order-total-label">Commission (5%)</div><div class="order-total-val">£${parseFloat(o.commission_amount).toFixed(2)}</div></div>
+            <div class="order-total-item"><div class="order-total-label">Food miles</div><div class="order-total-val">${parseFloat(o.food_miles_total).toFixed(1)} mi</div></div>
+            <div class="order-total-item"><div class="order-total-label">Payment</div><div class="order-total-val" style="text-transform:capitalize">${o.payment_status}</div></div>
+          </div>
+        </div>`;
+      }).join('');
+    } catch(e) { document.getElementById('orders-list').innerHTML = '<p class="text-muted">Could not load orders.</p>'; }
+  }
+
+  loadOrders();
+</script>
+{% endblock %}

@@ -32,7 +32,7 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'marketplace' / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {'context_processors': [
             'django.template.context_processors.request',
@@ -78,5 +78,5 @@ REST_FRAMEWORK = {
     ],
 }
 SESSION_COOKIE_HTTPONLY = True
-CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False    # Must be False for JS frontends to read the csrftoken cookie
 AI_SERVICE_URL = os.getenv('AI_SERVICE_URL', 'http://localhost:8001')

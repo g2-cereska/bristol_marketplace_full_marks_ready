@@ -1,6 +1,7 @@
 from django.contrib.auth import login, logout
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from django.middleware.csrf import get_token
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -41,6 +42,13 @@ class HealthView(APIView):
 
     def get(self, request):
         return Response({'status': 'ok'})
+
+
+class CsrfTokenView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        return Response({'csrfToken': get_token(request)})
 
 
 class LoginView(APIView):
@@ -284,3 +292,4 @@ class AdminDashboardView(APIView):
             'producer_exposure': producer_exposure,
             'recent_activity': recent,
         })
+    

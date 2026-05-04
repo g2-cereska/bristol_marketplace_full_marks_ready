@@ -1,0 +1,353 @@
+{% extends "marketplace/base.html" %}
+{% block title %}Producer Hub — Bristol Food Network{% endblock %}
+{% block content %}
+<style>
+  .producer-layout { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+  .hub-tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 2rem; flex-wrap: wrap; }
+  .hub-tab { padding: 10px 20px; font-size: 0.875rem; font-weight: 600; color: var(--ink-soft); cursor: pointer; border-bottom: 2.5px solid transparent; margin-bottom: -2px; transition: all 0.15s; background: none; border-top:none;border-left:none;border-right:none; font-family: 'DM Sans', sans-serif; }
+  .hub-tab.active { color: var(--green); border-bottom-color: var(--green); }
+  .hub-panel { display: none; }
+  .hub-panel.active { display: block; }
+
+  /* PRODUCT FORM */
+  .product-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 700px) { .product-form-grid { grid-template-columns: 1fr; } }
+
+  /* PRODUCT TABLE */
+  .product-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .product-table th { background: var(--green-dark); color: var(--green-pale); padding: 10px 14px; text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+  .product-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .product-table tr:last-child td { border-bottom: none; }
+  .product-table tr:hover td { background: #fafaf8; }
+  .surplus-tag { background: var(--amber-pale); color: #7a5700; border: 1px solid var(--amber); border-radius: 6px; padding: 2px 8px; font-size: 0.72rem; font-weight: 600; }
+
+  /* SUBORDERS */
+  .suborder-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 1rem; overflow: hidden; box-shadow: var(--shadow); }
+  .suborder-head { padding: 1rem 1.25rem; background: var(--cream); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .suborder-body { padding: 1rem 1.25rem; }
+  .status-stepper { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .step { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background: var(--border); color: var(--ink-soft); }
+  .step.done { background: var(--green-pale); color: var(--green-dark); }
+  .step.current { background: var(--green); color: #fff; }
+  .step-arrow { color: var(--ink-soft); font-size: 0.75rem; }
+  .advance-btn { padding: 6px 14px; border-radius: var(--radius); background: var(--green); color: #fff; border: none; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.12s; }
+  .advance-btn:hover { background: var(--green-dark); }
+  .advance-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* SETTLEMENT */
+  .settlement-card { background: var(--green-dark); color: var(--green-pale); border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 1.5rem; }
+  .settlement-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+  .settlement-item .label { font-size: 0.78rem; opacity: 0.65; margin-bottom: 4px; }
+  .settlement-item .value { font-size: 1.8rem; font-weight: 700; font-family: 'DM Serif Display', serif; color: var(--green-light); }
+  .settlement-item .sub { font-size: 0.75rem; opacity: 0.55; margin-top: 2px; }
+
+  /* AI FORECAST */
+  .forecast-row { display: flex; align-items: center; gap: 1rem; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .forecast-row:last-child { border-bottom: none; }
+  .forecast-product { flex: 1; font-weight: 600; font-size: 0.9rem; }
+  .forecast-pred { font-size: 1.3rem; font-weight: 700; color: var(--green-dark); min-width: 40px; }
+  .forecast-trend { font-size: 1rem; }
+  .forecast-bar { flex: 2; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .forecast-fill { height: 100%; background: var(--green-light); border-radius: 4px; }
+  .forecast-exp { font-size: 0.78rem; color: var(--ink-soft); }
+</style>
+
+<div class="producer-layout">
+  <div class="page-header flex justify-between items-center" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
+    <div>
+      <h1 class="page-title">Producer Hub</h1>
+      <p class="page-subtitle" id="producer-subtitle">Manage your products, orders, and settlements</p>
+    </div>
+  </div>
+
+  <div id="auth-gate" class="hidden">
+    <div style="text-align:center;padding:3rem;color:var(--ink-soft)">
+      <div style="font-size:3rem">🔒</div>
+      <p class="mb-2">You need a producer account to access this page.</p>
+      <a href="/market/login/" class="btn btn-primary">Sign in</a>
+    </div>
+  </div>
+
+  <div id="hub-content">
+    <div class="hub-tabs">
+      <button class="hub-tab active" onclick="switchHub('products')">🌿 My Products</button>
+      <button class="hub-tab" onclick="switchHub('orders')">📦 Sub-orders</button>
+      <button class="hub-tab" onclick="switchHub('settlement')">💷 Settlement</button>
+      <button class="hub-tab" onclick="switchHub('forecast')">📈 AI Forecast</button>
+    </div>
+
+    <!-- PRODUCTS TAB -->
+    <div class="hub-panel active" id="hub-products">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px;">
+        <h2 style="font-size:1.3rem;color:var(--green-dark);">Your listings</h2>
+        <button class="btn btn-primary" onclick="toggleForm()">+ Add product</button>
+      </div>
+
+      <!-- ADD PRODUCT FORM -->
+      <div class="card mb-2 hidden" id="product-form-card">
+        <div class="card-body">
+          <h3 style="font-size:1.1rem;color:var(--green-dark);margin-bottom:1rem;">New product</h3>
+          <div id="prod-form-alert"></div>
+          <div class="product-form-grid">
+            <div class="form-group"><label>Product name *</label><input type="text" id="pf-name" placeholder="Organic Tomatoes"></div>
+            <div class="form-group"><label>Category *</label>
+              <select id="pf-category"><option value="">Select category…</option></select>
+            </div>
+            <div class="form-group"><label>Price (£) *</label><input type="number" id="pf-price" step="0.01" min="0" placeholder="3.50"></div>
+            <div class="form-group"><label>Unit</label><input type="text" id="pf-unit" placeholder="kg / bunch / litre" value="unit"></div>
+            <div class="form-group"><label>Stock quantity *</label><input type="number" id="pf-stock" min="1" placeholder="50"></div>
+            <div class="form-group"><label>Availability *</label>
+              <select id="pf-availability">
+                <option value="available">Available</option>
+                <option value="in_season">In season</option>
+                <option value="out_of_season">Out of season</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Harvest date</label><input type="date" id="pf-harvest"></div>
+            <div class="form-group"><label>Best before</label><input type="date" id="pf-bestbefore"></div>
+            <div class="form-group"><label>Farm origin</label><input type="text" id="pf-origin" placeholder="Bristol Valley Farm"></div>
+            <div class="form-group"><label>Allergen info</label><input type="text" id="pf-allergens" placeholder="Contains gluten…"></div>
+            <div class="form-group"><label>Discount % (surplus)</label><input type="number" id="pf-discount" min="0" max="90" placeholder="0 = no discount"></div>
+            <div class="form-group" style="display:flex;align-items:center;gap:12px;padding-top:1.5rem;">
+              <label style="text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="pf-organic" style="width:auto"> Organic certified</label>
+            </div>
+          </div>
+          <div class="form-group"><label>Description</label><textarea id="pf-desc" rows="2" placeholder="Tell customers about this product…"></textarea></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="addProduct()">Save product</button>
+            <button class="btn btn-secondary" onclick="toggleForm()">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRODUCTS TABLE -->
+      <div class="card">
+        <div style="overflow-x:auto;">
+          <table class="product-table" id="prod-table">
+            <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Surplus</th></tr></thead>
+            <tbody id="prod-tbody"><tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--ink-soft)">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ORDERS TAB -->
+    <div class="hub-panel" id="hub-orders">
+      <div id="suborders-list"><p class="text-muted">Loading…</p></div>
+    </div>
+
+    <!-- SETTLEMENT TAB -->
+    <div class="hub-panel" id="hub-settlement">
+      <div class="settlement-card" id="settlement-display">
+        <h2 style="font-size:1.5rem;margin-bottom:0.25rem;">Weekly settlement</h2>
+        <p style="opacity:0.6;font-size:0.875rem;">Covers delivered sub-orders from the last 7 days</p>
+        <div class="settlement-grid">
+          <div class="settlement-item"><div class="label">Orders total</div><div class="value" id="set-total">—</div><div class="sub">gross sales</div></div>
+          <div class="settlement-item"><div class="label">Commission (5%)</div><div class="value" id="set-commission">—</div><div class="sub">network fee</div></div>
+          <div class="settlement-item"><div class="label">Your payout</div><div class="value" id="set-payout">—</div><div class="sub">95% of sales</div></div>
+          <div class="settlement-item"><div class="label">Tax year total</div><div class="value" id="set-ytd">—</div><div class="sub">cumulative payout</div></div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="requestSettlement()">Request settlement now</button>
+      <p class="text-sm text-muted mt-1">This generates the settlement record for the current 7-day window.</p>
+    </div>
+
+    <!-- FORECAST TAB -->
+    <div class="hub-panel" id="hub-forecast">
+      <div id="forecast-content"><p class="text-muted">Loading AI forecast…</p></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let producerId = AUTH?.profile_id;
+  const NEXT_STATUS = { pending: 'confirmed', confirmed: 'ready', ready: 'delivered' };
+  const STATUS_CLASS = { pending:'status-pending',confirmed:'status-confirmed',ready:'status-ready',delivered:'status-delivered' };
+
+  async function init() {
+    if (!AUTH || AUTH.role !== 'producer') {
+      document.getElementById('hub-content').classList.add('hidden');
+      document.getElementById('auth-gate').classList.remove('hidden');
+      return;
+    }
+    document.getElementById('producer-subtitle').textContent = `Welcome back, ${AUTH.user?.username}`;
+    await loadCategories();
+    await loadProducts();
+  }
+
+  async function loadCategories() {
+    try {
+      const cats = await api('/categories/');
+      const sel = document.getElementById('pf-category');
+      cats.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; sel.appendChild(o); });
+    } catch(e) {}
+  }
+
+  async function loadProducts() {
+    try {
+      const products = await api(`/products/?producer=${producerId}`);
+      const tbody = document.getElementById('prod-tbody');
+      if (!products.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--ink-soft)">No products yet. Add your first listing above.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = products.map(p => {
+        const avBadge = p.availability === 'in_season' ? '<span class="badge badge-green">In season</span>' : p.availability === 'available' ? '<span class="badge badge-gray">Available</span>' : '<span class="badge badge-red">Unavailable</span>';
+        const surplus = p.discount_percent > 0 ? `<span class="surplus-tag">-${p.discount_percent}%</span>` : '—';
+        return `<tr>
+          <td><strong>${p.name}</strong><br><span style="font-size:0.75rem;color:var(--ink-soft)">${p.organic_certified ? '🌿 Organic · ' : ''}${p.farm_origin||''}</span></td>
+          <td>${p.category_name}</td>
+          <td>£${parseFloat(p.current_price).toFixed(2)}<br><span style="font-size:0.72rem;color:var(--ink-soft)">per ${p.unit}</span></td>
+          <td>${p.stock_quantity}</td>
+          <td>${avBadge}</td>
+          <td>${surplus}</td>
+        </tr>`;
+      }).join('');
+    } catch(e) { console.error(e); }
+  }
+
+  function toggleForm() {
+    document.getElementById('product-form-card').classList.toggle('hidden');
+  }
+
+  async function addProduct() {
+    const payload = {
+      producer: producerId,
+      category: parseInt(document.getElementById('pf-category').value),
+      name: document.getElementById('pf-name').value.trim(),
+      description: document.getElementById('pf-desc').value.trim(),
+      price: document.getElementById('pf-price').value,
+      unit: document.getElementById('pf-unit').value.trim() || 'unit',
+      stock_quantity: parseInt(document.getElementById('pf-stock').value),
+      availability: document.getElementById('pf-availability').value,
+      organic_certified: document.getElementById('pf-organic').checked,
+      allergen_info: document.getElementById('pf-allergens').value.trim(),
+      discount_percent: parseInt(document.getElementById('pf-discount').value) || 0,
+    };
+    const harvest = document.getElementById('pf-harvest').value;
+    const bb = document.getElementById('pf-bestbefore').value;
+    const origin = document.getElementById('pf-origin').value.trim();
+    if (harvest) payload.harvest_date = harvest;
+    if (bb) payload.best_before = bb;
+    if (origin) payload.farm_origin = origin;
+
+    if (!payload.name || !payload.category || !payload.price || !payload.stock_quantity) {
+      document.getElementById('prod-form-alert').innerHTML = '<div class="alert alert-error">Please fill in all required fields.</div>';
+      return;
+    }
+    try {
+      await api('/products/', { method: 'POST', body: JSON.stringify(payload) });
+      toggleForm();
+      toast('Product added successfully 🌿');
+      loadProducts();
+      document.getElementById('prod-form-alert').innerHTML = '';
+    } catch(e) {
+      const errs = e.data;
+      const msg = Object.entries(errs).map(([k,v])=>`${k}: ${Array.isArray(v)?v.join(', '):v}`).join('<br>');
+      document.getElementById('prod-form-alert').innerHTML = `<div class="alert alert-error">${msg}</div>`;
+    }
+  }
+
+  async function loadSuborders() {
+    try {
+      const subs = await api(`/producer-orders/${producerId}/`);
+      if (!subs.length) {
+        document.getElementById('suborders-list').innerHTML = '<div style="text-align:center;padding:3rem;color:var(--ink-soft)"><div style="font-size:3rem">📦</div><p>No orders yet.</p></div>';
+        return;
+      }
+      const nextLabels = { pending: 'Mark confirmed', confirmed: 'Mark ready', ready: 'Mark delivered' };
+      document.getElementById('suborders-list').innerHTML = subs.map(sub => {
+        const stages = ['pending','confirmed','ready','delivered'];
+        const stepperHTML = stages.map((s,i) => {
+          const idx = stages.indexOf(sub.status);
+          const cls = i < idx ? 'done' : i === idx ? 'current' : '';
+          return `<span class="step ${cls}">${s}</span>${i<stages.length-1 ? '<span class="step-arrow">›</span>' : ''}`;
+        }).join('');
+        const nextStatus = NEXT_STATUS[sub.status];
+        const canAdvance = !!nextStatus;
+        const itemsHTML = sub.items.map(i => `<div class="item-mini" style="display:flex;justify-content:space-between;font-size:0.82rem;padding:2px 0;"><span>${i.product_name} × ${i.quantity}</span><span>£${parseFloat(i.item_total).toFixed(2)}</span></div>`).join('');
+        return `<div class="suborder-card">
+          <div class="suborder-head">
+            <div>
+              <div style="font-weight:700;font-size:0.9rem;">Order sub-ref #${sub.id}</div>
+              <div style="font-size:0.78rem;color:var(--ink-soft);margin-top:2px;">📅 ${sub.delivery_date||'TBD'} · £${parseFloat(sub.subtotal).toFixed(2)}</div>
+            </div>
+            <button class="advance-btn" ${!canAdvance?'disabled':''} onclick="advanceStatus(${sub.id},'${nextStatus}')">${nextLabels[sub.status]||'Delivered ✓'}</button>
+          </div>
+          <div class="suborder-body">
+            <div class="status-stepper mb-1">${stepperHTML}</div>
+            ${itemsHTML}
+            ${sub.delivery_notes ? `<div class="text-sm text-muted mt-1">📝 ${sub.delivery_notes}</div>` : ''}
+            <div style="font-size:0.8rem;color:var(--ink-soft);margin-top:8px;">Your payout: <strong style="color:var(--green-dark)">£${parseFloat(sub.producer_payout).toFixed(2)}</strong></div>
+          </div>
+        </div>`;
+      }).join('');
+    } catch(e) { document.getElementById('suborders-list').innerHTML = '<p class="text-muted">Could not load orders.</p>'; }
+  }
+
+  async function advanceStatus(subId, newStatus) {
+    try {
+      await api(`/producer-suborders/${subId}/status/`, { method: 'PATCH', body: JSON.stringify({ status: newStatus }) });
+      toast(`Status updated to ${newStatus} ✓`);
+      loadSuborders();
+    } catch(e) { toast(e.data?.status?.[0] || 'Could not update status.', 'error'); }
+  }
+
+  async function requestSettlement() {
+    try {
+      const s = await api(`/settlements/${producerId}/`, { method: 'POST' });
+      document.getElementById('set-total').textContent = `£${parseFloat(s.orders_total).toFixed(2)}`;
+      document.getElementById('set-commission').textContent = `£${parseFloat(s.commission_total).toFixed(2)}`;
+      document.getElementById('set-payout').textContent = `£${parseFloat(s.payout_total).toFixed(2)}`;
+      document.getElementById('set-ytd').textContent = `£${parseFloat(s.running_tax_year_total).toFixed(2)}`;
+      toast('Settlement calculated for the last 7 days 💷');
+    } catch(e) { toast('Could not generate settlement.', 'error'); }
+  }
+
+  async function loadForecast() {
+    try {
+      const data = await api(`/ai/forecast/${producerId}/`);
+      const rows = data.forecast;
+      if (!rows || !rows.length) {
+        document.getElementById('forecast-content').innerHTML = '<p class="text-muted">No forecast data yet — orders are needed to generate predictions.</p>';
+        return;
+      }
+      const maxPred = Math.max(...rows.map(r => r.predicted_next_week_demand));
+      document.getElementById('forecast-content').innerHTML = `
+        <div class="card mb-2" style="padding:1rem 1.25rem;background:var(--green-pale);border-color:var(--green-light);">
+          <p style="font-size:0.82rem;color:var(--green-dark);">🤖 <strong>Model:</strong> ${data.model_version} · ${data.method} · Horizon: ${data.horizon}</p>
+          <p style="font-size:0.78rem;color:var(--ink-mid);margin-top:4px;">${data.explanation}</p>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            ${rows.map(r => {
+              const pct = maxPred > 0 ? (r.predicted_next_week_demand / maxPred * 100) : 0;
+              const trend = r.trend === 'up' ? '↑' : '↓';
+              const trendColor = r.trend === 'up' ? 'var(--green)' : 'var(--clay)';
+              return `<div class="forecast-row">
+                <div class="forecast-product">${r.product}</div>
+                <div style="color:${trendColor};font-size:1rem;font-weight:700;">${trend}</div>
+                <div class="forecast-bar"><div class="forecast-fill" style="width:${pct}%"></div></div>
+                <div class="forecast-pred">${r.predicted_next_week_demand}</div>
+                <div class="forecast-exp">${r.explanation}<br><span style="font-size:0.72rem;opacity:0.7">Confidence: ${Math.round(r.confidence*100)}%</span></div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+    } catch(e) { document.getElementById('forecast-content').innerHTML = '<p class="text-muted">AI forecast unavailable. Is the AI service running?</p>'; }
+  }
+
+  function switchHub(tab) {
+    document.querySelectorAll('.hub-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.hub-panel').forEach(p => p.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('hub-' + tab).classList.add('active');
+    if (tab === 'orders') loadSuborders();
+    if (tab === 'forecast') loadForecast();
+  }
+
+  init();
+</script>
+{% endblock %}
