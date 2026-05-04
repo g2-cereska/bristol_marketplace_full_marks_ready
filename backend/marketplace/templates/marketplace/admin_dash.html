@@ -1,0 +1,437 @@
+{% extends "marketplace/base.html" %}
+{% block title %}Admin Dashboard — Bristol Food Network{% endblock %}
+{% block content %}
+<style>
+  /* ── Dark command-centre aesthetic ── */
+  .dash-wrap {
+    min-height: calc(100vh - 60px);
+    background: #0f1410;
+    padding: 2rem;
+    color: #e8ede9;
+  }
+  .dash-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(82,183,136,0.15);
+  }
+  .dash-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.2rem;
+    color: #52B788;
+    line-height: 1.1;
+  }
+  .dash-subtitle { font-size: 0.8rem; color: #5a7060; margin-top: 4px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .dash-live { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: #5a7060; }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #52B788; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+  /* ── STAT CARDS ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .stat-card {
+    background: #161d17;
+    border: 1px solid rgba(82,183,136,0.12);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+    animation: fadeUp 0.4s ease both;
+  }
+  .stat-card:hover { border-color: rgba(82,183,136,0.35); }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #52B788, transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .stat-card:hover::before { opacity: 1; }
+  .stat-icon { font-size: 1.4rem; margin-bottom: 0.75rem; }
+  .stat-val {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.4rem;
+    color: #52B788;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-label { font-size: 0.75rem; color: #5a7060; text-transform: uppercase; letter-spacing: 0.06em; }
+  .stat-card:nth-child(1) { animation-delay: 0.05s; }
+  .stat-card:nth-child(2) { animation-delay: 0.1s; }
+  .stat-card:nth-child(3) { animation-delay: 0.15s; }
+  .stat-card:nth-child(4) { animation-delay: 0.2s; }
+  .stat-card:nth-child(5) { animation-delay: 0.25s; }
+  .stat-card:nth-child(6) { animation-delay: 0.3s; }
+  @keyframes fadeUp { from { opacity:0; transform: translateY(16px); } to { opacity:1; transform:none; } }
+
+  /* ── PANELS ── */
+  .dash-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .dash-grid-3 {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.25rem;
+  }
+  @media (max-width: 900px) {
+    .dash-grid, .dash-grid-3 { grid-template-columns: 1fr; }
+  }
+  .panel {
+    background: #161d17;
+    border: 1px solid rgba(82,183,136,0.12);
+    border-radius: 12px;
+    overflow: hidden;
+    animation: fadeUp 0.4s ease 0.3s both;
+  }
+  .panel-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(82,183,136,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .panel-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #52B788;
+  }
+  .panel-count { font-size: 0.72rem; color: #5a7060; }
+  .panel-body { padding: 1rem 1.25rem; }
+
+  /* ── ACTIVITY FEED ── */
+  .activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #52B788;
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+  .activity-action { font-size: 0.82rem; color: #c8d4c9; font-weight: 500; }
+  .activity-detail { font-size: 0.75rem; color: #5a7060; margin-top: 1px; }
+  .activity-time { font-size: 0.7rem; color: #3d4d3e; margin-left: auto; flex-shrink: 0; white-space: nowrap; }
+  .action-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .ab-order { background: rgba(82,183,136,0.15); color: #52B788; }
+  .ab-register { background: rgba(212,160,23,0.15); color: #D4A017; }
+  .ab-product { background: rgba(82,130,183,0.15); color: #6faadf; }
+  .ab-default { background: rgba(255,255,255,0.06); color: #8a9e8b; }
+
+  /* ── TOP PRODUCTS ── */
+  .product-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .product-row:last-child { border-bottom: none; }
+  .product-rank { font-size: 0.7rem; color: #3d4d3e; width: 18px; text-align: right; flex-shrink: 0; }
+  .product-name-cell { flex: 1; font-size: 0.85rem; color: #c8d4c9; min-width: 0; }
+  .product-name-cell small { display: block; font-size: 0.7rem; color: #5a7060; }
+  .stock-bar-wrap { width: 80px; flex-shrink: 0; }
+  .stock-bar { height: 5px; background: rgba(82,183,136,0.12); border-radius: 3px; overflow: hidden; }
+  .stock-fill { height: 100%; background: #52B788; border-radius: 3px; transition: width 0.6s ease; }
+  .stock-val { font-size: 0.7rem; color: #52B788; text-align: right; margin-top: 2px; }
+
+  /* ── EXPOSURE CHART ── */
+  .exposure-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .exposure-row:last-child { border-bottom: none; }
+  .exposure-name { font-size: 0.8rem; color: #c8d4c9; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .exposure-bar-wrap { width: 120px; flex-shrink: 0; }
+  .exposure-bar { height: 6px; background: rgba(82,183,136,0.1); border-radius: 3px; overflow: hidden; }
+  .exposure-fill { height: 100%; background: linear-gradient(90deg, #2D6A4F, #52B788); border-radius: 3px; }
+  .exposure-count { font-size: 0.72rem; color: #52B788; min-width: 24px; text-align: right; }
+
+  /* ── ROLE TABLE ── */
+  .role-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .role-table th { color: #3d4d3e; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 6px 8px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .role-table td { padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); color: #c8d4c9; vertical-align: middle; }
+  .role-table tr:last-child td { border-bottom: none; }
+  .role-pill { display: inline-block; font-size: 0.65rem; padding: 2px 7px; border-radius: 10px; font-weight: 700; text-transform: uppercase; }
+  .role-producer { background: rgba(82,183,136,0.15); color: #52B788; }
+  .role-customer { background: rgba(212,160,23,0.12); color: #D4A017; }
+  .role-admin { background: rgba(220,80,80,0.15); color: #e07070; }
+
+  /* ── EMPTY / LOADING ── */
+  .dash-empty { text-align: center; padding: 2rem; color: #3d4d3e; font-size: 0.82rem; }
+  .dash-loading { text-align: center; padding: 2rem; color: #3d4d3e; }
+  .dash-spinner { width: 24px; height: 24px; border: 2px solid rgba(82,183,136,0.2); border-top-color: #52B788; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── ACCESS DENIED ── */
+  .access-denied { text-align: center; padding: 4rem 2rem; }
+  .access-denied .icon { font-size: 3rem; margin-bottom: 1rem; }
+  .access-denied h2 { font-size: 1.8rem; color: #52B788; margin-bottom: 0.5rem; }
+  .access-denied p { color: #5a7060; font-size: 0.9rem; }
+
+  /* ── REFRESH BTN ── */
+  .refresh-btn {
+    background: rgba(82,183,136,0.1);
+    border: 1px solid rgba(82,183,136,0.2);
+    color: #52B788;
+    font-size: 0.75rem;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .refresh-btn:hover { background: rgba(82,183,136,0.2); }
+</style>
+
+<div class="dash-wrap" id="dash-root">
+  <!-- ACCESS DENIED STATE -->
+  <div class="access-denied hidden" id="access-denied">
+    <div class="icon">🔒</div>
+    <h2>Staff access only</h2>
+    <p>This dashboard requires a staff or superuser account.</p>
+    <a href="/market/login/" style="color:#52B788;font-size:0.875rem;display:inline-block;margin-top:1rem;">← Back to login</a>
+  </div>
+
+  <!-- DASHBOARD CONTENT -->
+  <div id="dash-content" class="hidden">
+    <div class="dash-header">
+      <div>
+        <div class="dash-title">Network Dashboard</div>
+        <div class="dash-subtitle">Bristol Regional Food Network · Admin</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+        <div class="dash-live"><div class="live-dot"></div> Live data</div>
+        <button class="refresh-btn" onclick="loadDashboard()">↻ Refresh</button>
+      </div>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card"><div class="dash-spinner"></div></div>
+    </div>
+
+    <!-- ROW 1: Activity + Top Products -->
+    <div class="dash-grid">
+      <div class="panel" id="panel-activity">
+        <div class="panel-header">
+          <span class="panel-title">Recent activity</span>
+          <span class="panel-count" id="activity-count"></span>
+        </div>
+        <div class="panel-body" id="activity-body">
+          <div class="dash-loading"><div class="dash-spinner"></div>Loading…</div>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-products">
+        <div class="panel-header">
+          <span class="panel-title">Top products by stock</span>
+        </div>
+        <div class="panel-body" id="products-body">
+          <div class="dash-loading"><div class="dash-spinner"></div>Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 2: Producer exposure + User breakdown -->
+    <div class="dash-grid-3">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Producer recommendation exposure</span>
+          <span class="panel-count" id="reco-count"></span>
+        </div>
+        <div class="panel-body" id="exposure-body">
+          <div class="dash-loading"><div class="dash-spinner"></div>Loading…</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Platform users</span>
+        </div>
+        <div class="panel-body" id="users-body">
+          <div class="dash-loading"><div class="dash-spinner"></div>Loading…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function timeAgo(isoStr) {
+    const diff = (Date.now() - new Date(isoStr)) / 1000;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+    return `${Math.floor(diff/86400)}d ago`;
+  }
+
+  function actionBadge(action) {
+    if (action.includes('order')) return `<span class="action-badge ab-order">${action.replace(/_/g,' ')}</span>`;
+    if (action.includes('register')) return `<span class="action-badge ab-register">${action.replace(/_/g,' ')}</span>`;
+    if (action.includes('product')) return `<span class="action-badge ab-product">${action.replace(/_/g,' ')}</span>`;
+    return `<span class="action-badge ab-default">${action.replace(/_/g,' ')}</span>`;
+  }
+
+  async function loadDashboard() {
+    // Auth gate
+    if (!AUTH) {
+      document.getElementById('access-denied').classList.remove('hidden');
+      return;
+    }
+    if (AUTH.role !== 'admin' && !AUTH.is_staff) {
+      document.getElementById('access-denied').classList.remove('hidden');
+      return;
+    }
+    document.getElementById('dash-content').classList.remove('hidden');
+
+    try {
+      const d = await api('/admin-dashboard/');
+
+      // ── STAT CARDS ──
+      const stats = [
+        { icon: '🌾', val: d.producer_count,       label: 'Producers' },
+        { icon: '🛍️', val: d.customer_count,       label: 'Customers' },
+        { icon: '🥕', val: d.product_count,         label: 'Products' },
+        { icon: '📦', val: d.order_count,           label: 'Total orders' },
+        { icon: '⏳', val: d.pending_order_count,   label: 'Pending orders' },
+        { icon: '🤖', val: d.recommendation_logs,  label: 'AI recommendations' },
+      ];
+      document.getElementById('stats-grid').innerHTML = stats.map((s,i) => `
+        <div class="stat-card" style="animation-delay:${0.05*(i+1)}s">
+          <div class="stat-icon">${s.icon}</div>
+          <div class="stat-val">${s.val}</div>
+          <div class="stat-label">${s.label}</div>
+        </div>`).join('');
+
+      // ── ACTIVITY FEED ──
+      const acts = d.recent_activity || [];
+      document.getElementById('activity-count').textContent = `${acts.length} events`;
+      document.getElementById('activity-body').innerHTML = acts.length
+        ? acts.map(a => `
+          <div class="activity-item">
+            <div class="activity-dot"></div>
+            <div style="flex:1;min-width:0;">
+              <div class="activity-action">${actionBadge(a.action)}</div>
+              <div class="activity-detail">${a.details || '—'}</div>
+            </div>
+            <div class="activity-time">${timeAgo(a.created_at)}</div>
+          </div>`).join('')
+        : '<div class="dash-empty">No activity yet</div>';
+
+      // ── TOP PRODUCTS ──
+      const prods = d.top_products || [];
+      const maxStock = Math.max(...prods.map(p => p.stock_quantity), 1);
+      document.getElementById('products-body').innerHTML = prods.length
+        ? prods.map((p, i) => `
+          <div class="product-row">
+            <div class="product-rank">${i+1}</div>
+            <div class="product-name-cell">${p.name}</div>
+            <div class="stock-bar-wrap">
+              <div class="stock-bar"><div class="stock-fill" style="width:${(p.stock_quantity/maxStock*100).toFixed(0)}%"></div></div>
+              <div class="stock-val">${p.stock_quantity} units</div>
+            </div>
+          </div>`).join('')
+        : '<div class="dash-empty">No products yet</div>';
+
+      // ── PRODUCER EXPOSURE ──
+      const exp = d.producer_exposure || {};
+      const expEntries = Object.entries(exp).sort((a,b) => b[1]-a[1]);
+      const maxExp = Math.max(...expEntries.map(e => e[1]), 1);
+      document.getElementById('reco-count').textContent =
+        `${d.recommendation_logs} total recommendations`;
+      document.getElementById('exposure-body').innerHTML = expEntries.length
+        ? expEntries.map(([name, count]) => `
+          <div class="exposure-row">
+            <div class="exposure-name">${name}</div>
+            <div class="exposure-bar-wrap">
+              <div class="exposure-bar">
+                <div class="exposure-fill" style="width:${(count/maxExp*100).toFixed(0)}%"></div>
+              </div>
+            </div>
+            <div class="exposure-count">${count}</div>
+          </div>`).join('')
+        : '<div class="dash-empty">No recommendation data yet.<br>Customers need to browse products to generate exposure data.</div>';
+
+      // ── USERS BREAKDOWN ──
+      document.getElementById('users-body').innerHTML = `
+        <table class="role-table">
+          <thead><tr><th>Role</th><th>Count</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="role-pill role-producer">Producer</span></td>
+              <td>${d.producer_count}</td>
+              <td style="color:#5a7060;font-size:0.75rem;">Active sellers</td>
+            </tr>
+            <tr>
+              <td><span class="role-pill role-customer">Customer</span></td>
+              <td>${d.customer_count}</td>
+              <td style="color:#5a7060;font-size:0.75rem;">Registered buyers</td>
+            </tr>
+            <tr>
+              <td><span class="role-pill role-admin">Staff</span></td>
+              <td>—</td>
+              <td style="color:#5a7060;font-size:0.75rem;">You</td>
+            </tr>
+            <tr>
+              <td colspan="3" style="padding-top:1rem;">
+                <div style="background:rgba(82,183,136,0.07);border:1px solid rgba(82,183,136,0.12);border-radius:8px;padding:10px 12px;">
+                  <div style="font-size:0.7rem;color:#5a7060;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Commission collected</div>
+                  <div style="font-size:1.3rem;font-family:'DM Serif Display',serif;color:#52B788;">
+                    £${(d.order_count * 0.35).toFixed(2)}
+                    <span style="font-size:0.72rem;color:#5a7060;font-family:'DM Sans',sans-serif;">est. at 5%</span>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>`;
+
+    } catch(e) {
+      if (e.status === 403) {
+        document.getElementById('dash-content').classList.add('hidden');
+        document.getElementById('access-denied').classList.remove('hidden');
+      } else {
+        document.getElementById('dash-content').innerHTML =
+          '<div class="dash-empty" style="padding:3rem;">Failed to load dashboard data. Check the server is running.</div>';
+      }
+    }
+  }
+
+  loadDashboard();
+</script>
+{% endblock %}

@@ -19,3 +19,7 @@ class ProducerHubView(TemplateView):
 
 class LoginPageView(TemplateView):
     template_name = "marketplace/login.html"
+
+
+class AdminDashPageView(TemplateView):
+    template_name = "marketplace/admin_dash.html"

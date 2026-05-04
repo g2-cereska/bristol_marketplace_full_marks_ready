@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import include, path
 from marketplace.frontend_views import (
-    CatalogueView, CartView, OrdersView, ProducerHubView, LoginPageView,
+    CatalogueView, CartView, OrdersView, ProducerHubView, LoginPageView, AdminDashPageView
 )
  
 urlpatterns = [
@@ -14,5 +14,6 @@ urlpatterns = [
     path('market/orders/',    OrdersView.as_view(),       name='orders'),
     path('market/producer/',  ProducerHubView.as_view(),  name='producer'),
     path('market/login/',     LoginPageView.as_view(),    name='login'),
+    path('market/admin-dash/',     AdminDashPageView.as_view(), name='admin-dash'),
 ]
  
